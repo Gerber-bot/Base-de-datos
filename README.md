@@ -24,12 +24,20 @@ El objetivo principal de esta primera etapa fue presentar el caso de estudio y e
 ```
 Base-de-datos/
 ├── Primera Parte/
-│   └── apuntes.md
+    ├── CapituloI.pdf
+    ├── Carátula.pdf
+    ├── Diccionario de Datos.pdf
+    ├── Modelo de Datos Relacional.pdf
+    └── Proyecto Grupo_17.pdf
 ├── Segunda Parte/ 🛠️ Próximamente
 └── README.md
 ```
-### 📄 Descripción de los Archivos:
-- `CapituloI.pdf:`
+### 📄 Descripción de la Primera Parte:
+- `CapituloI.pdf:`Planteamiento del problema y objetivos
+- `Carátula.pdf:` Carátula del Proyecto oficial académico
+- `Diccionario de Datos.pdf:` Documentacion de restricciones del sistema
+- `Modelo de Datos Relacional.pdf:` Esquema del Modelo Relacional (ER)
+- `Proyecto Grupo_17.pdf:` Documento oficial de la Primera Entrega
 
 
 
