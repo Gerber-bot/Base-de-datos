@@ -1,0 +1,433 @@
+/****************************************************************************************
+    AUTOMOTORS – BASE PROFESIONAL COMPLETA
+    VEHÍCULO ÚNICO – SIN STOCK – ESTADOS PROFESIONALES
+    PATENTE DUAL – VIN 17 – DNI VALIDADO – TRIGGERS PRO
+****************************************************************************************/
+
+DROP DATABASE IF EXISTS Automotors;
+GO
+CREATE DATABASE Automotors;
+GO
+USE Automotors;
+GO
+
+------------------------------------------------------------
+-- TABLA: Rol
+------------------------------------------------------------
+CREATE TABLE Rol (
+    id_rol INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: Usuario
+------------------------------------------------------------
+CREATE TABLE Usuario (
+    id_usuario INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    apellido VARCHAR(50) NOT NULL,
+    dni VARCHAR(15) NOT NULL UNIQUE,
+    fecha_nacimiento DATE NOT NULL,
+    password_hash VARBINARY(256) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    id_rol INT NOT NULL,
+    is_activo BIT NOT NULL DEFAULT 1,
+    creado_en DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+
+    CONSTRAINT FK_Usuario_Rol FOREIGN KEY (id_rol)
+        REFERENCES Rol(id_rol),
+
+    CONSTRAINT CK_Usuario_DNI CHECK (
+        dni NOT LIKE '%[^0-9]%' AND LEN(dni) BETWEEN 7 AND 9
+    )
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: Cliente
+------------------------------------------------------------
+CREATE TABLE Cliente (
+    id_cliente INT IDENTITY(1,1) PRIMARY KEY,
+    dni VARCHAR(15) NOT NULL UNIQUE,
+    nombre VARCHAR(50) NOT NULL,
+    apellido VARCHAR(50) NOT NULL,
+    telefono VARCHAR(30),
+    email VARCHAR(100),
+    direccion VARCHAR(150),
+
+    CONSTRAINT CK_Cliente_DNI CHECK (
+        dni NOT LIKE '%[^0-9]%' AND LEN(dni) BETWEEN 7 AND 9
+    )
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: Marca
+------------------------------------------------------------
+CREATE TABLE Marca (
+    id_marca INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(60) NOT NULL UNIQUE
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: Vehiculo
+------------------------------------------------------------
+CREATE TABLE Vehiculo (
+    id_vehiculo INT IDENTITY(1,1) PRIMARY KEY,
+    id_marca INT NOT NULL,
+    modelo VARCHAR(80) NOT NULL,
+    anio INT NOT NULL,
+    vin VARCHAR(40) NOT NULL UNIQUE,
+    patente VARCHAR(10) UNIQUE,
+    precio DECIMAL(12,2) NOT NULL,
+    estado VARCHAR(20) NOT NULL,
+    kilometraje INT NOT NULL DEFAULT 0,
+
+    CONSTRAINT FK_Vehiculo_Marca FOREIGN KEY (id_marca)
+        REFERENCES Marca(id_marca),
+
+    CONSTRAINT CK_Vehiculo_Anio CHECK (anio BETWEEN 1900 AND YEAR(GETDATE()) + 1),
+
+    CONSTRAINT CK_Vehiculo_Estado CHECK (estado IN ('disponible','reservado','vendido','baja')),
+
+    CONSTRAINT CK_VIN_Longitud CHECK (LEN(vin) = 17),
+
+    CONSTRAINT CK_Patente_Formato CHECK (
+        patente IS NULL OR
+        patente LIKE '[A-Z][A-Z][A-Z][0-9][0-9][0-9]' OR
+        patente LIKE '[A-Z][A-Z][0-9][0-9][0-9][A-Z][A-Z]'
+    ),
+
+    CONSTRAINT CK_Precio_Pos CHECK (precio > 0),
+    CONSTRAINT CK_Km CHECK (kilometraje >= 0)
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: Proveedor
+------------------------------------------------------------
+CREATE TABLE Proveedor (
+    id_proveedor INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    telefono VARCHAR(30),
+    email VARCHAR(100)
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: Repuesto
+------------------------------------------------------------
+CREATE TABLE Repuesto (
+    id_repuesto INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(80) NOT NULL UNIQUE,
+    precio DECIMAL(12,2) NOT NULL CHECK (precio >= 0),
+    id_proveedor INT NOT NULL,
+
+    CONSTRAINT FK_Repuesto_Proveedor FOREIGN KEY (id_proveedor)
+        REFERENCES Proveedor(id_proveedor)
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: MedioPago
+------------------------------------------------------------
+CREATE TABLE MedioPago (
+    id_medio_pago INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: Venta
+------------------------------------------------------------
+CREATE TABLE Venta (
+    id_venta INT IDENTITY(1,1) PRIMARY KEY,
+    id_cliente INT NOT NULL,
+    id_usuario INT NOT NULL,
+    fecha DATETIME2 NOT NULL,
+    id_medio_pago INT NOT NULL,
+    total DECIMAL(14,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
+
+    CONSTRAINT FK_Venta_Cliente FOREIGN KEY (id_cliente)
+        REFERENCES Cliente(id_cliente),
+
+    CONSTRAINT FK_Venta_Usuario FOREIGN KEY (id_usuario)
+        REFERENCES Usuario(id_usuario),
+
+    CONSTRAINT FK_Venta_MedioPago FOREIGN KEY (id_medio_pago)
+        REFERENCES MedioPago(id_medio_pago)
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: DetalleVenta
+------------------------------------------------------------
+CREATE TABLE DetalleVenta (
+    id_detalle INT IDENTITY(1,1) PRIMARY KEY,
+    id_venta INT NOT NULL,
+    id_vehiculo INT NOT NULL,
+    cantidad INT NOT NULL CHECK (cantidad = 1),
+    precio_unit DECIMAL(12,2) NOT NULL CHECK (precio_unit > 0),
+
+    subtotal AS (cantidad * precio_unit) PERSISTED,
+
+    CONSTRAINT FK_DV_Venta FOREIGN KEY (id_venta)
+        REFERENCES Venta(id_venta) ON DELETE CASCADE,
+
+    CONSTRAINT FK_DV_Vehiculo FOREIGN KEY (id_vehiculo)
+        REFERENCES Vehiculo(id_vehiculo)
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: Turno
+------------------------------------------------------------
+CREATE TABLE Turno (
+    id_turno INT IDENTITY(1,1) PRIMARY KEY,
+    id_cliente INT NOT NULL,
+    id_vehiculo INT NOT NULL,
+    fecha_hora DATETIME2 NOT NULL,
+    estado VARCHAR(20) NOT NULL CHECK (estado IN ('pendiente','realizado','cancelado')),
+    notas VARCHAR(300),
+
+    CONSTRAINT FK_Turno_Cliente FOREIGN KEY (id_cliente)
+        REFERENCES Cliente(id_cliente),
+
+    CONSTRAINT FK_Turno_Vehiculo FOREIGN KEY (id_vehiculo)
+        REFERENCES Vehiculo(id_vehiculo)
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: Reparacion
+------------------------------------------------------------
+CREATE TABLE Reparacion (
+    id_reparacion INT IDENTITY(1,1) PRIMARY KEY,
+    id_vehiculo INT NOT NULL,
+    id_cliente INT NOT NULL,
+    id_usuario INT NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NULL,
+    estado VARCHAR(20) NOT NULL CHECK (estado IN ('pendiente','en_proceso','finalizada','cancelada')),
+    total DECIMAL(12,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
+
+    CONSTRAINT FK_Rep_Vehiculo FOREIGN KEY (id_vehiculo)
+        REFERENCES Vehiculo(id_vehiculo),
+
+    CONSTRAINT FK_Rep_Cliente FOREIGN KEY (id_cliente)
+        REFERENCES Cliente(id_cliente),
+
+    CONSTRAINT FK_Rep_Usuario FOREIGN KEY (id_usuario)
+        REFERENCES Usuario(id_usuario)
+);
+GO
+
+------------------------------------------------------------
+-- TABLA: ReparacionRepuesto
+------------------------------------------------------------
+CREATE TABLE ReparacionRepuesto (
+    id_detalle INT IDENTITY(1,1) PRIMARY KEY,
+    id_reparacion INT NOT NULL,
+    id_repuesto INT NOT NULL,
+    cantidad INT NOT NULL CHECK (cantidad > 0),
+    precio_unit DECIMAL(12,2) NOT NULL CHECK (precio_unit >= 0),
+
+    subtotal AS (cantidad * precio_unit) PERSISTED,
+
+    CONSTRAINT FK_RR_Reparacion FOREIGN KEY (id_reparacion)
+        REFERENCES Reparacion(id_reparacion) ON DELETE CASCADE,
+
+    CONSTRAINT FK_RR_Repuesto FOREIGN KEY (id_repuesto)
+        REFERENCES Repuesto(id_repuesto)
+);
+GO
+
+/****************************************************************************************
+    ÍNDICES PROFESIONALES
+****************************************************************************************/
+
+CREATE INDEX IX_Ventas_Fecha ON Venta(fecha);
+CREATE INDEX IX_DV_Venta ON DetalleVenta(id_venta);
+CREATE INDEX IX_Turnos_FechaHora ON Turno(fecha_hora);
+CREATE INDEX IX_Reparaciones_FechaIni ON Reparacion(fecha_inicio);
+CREATE INDEX IX_RR_Reparacion ON ReparacionRepuesto(id_reparacion);
+CREATE INDEX IX_Repuestos_Proveedor ON Repuesto(id_proveedor);
+CREATE INDEX IX_Vehiculos_MarcaModeloAnio ON Vehiculo(id_marca, modelo, anio);
+CREATE INDEX IX_Vehiculos_Estado ON Vehiculo(estado);
+GO
+
+/****************************************************************************************
+    TRIGGER: RECALCULAR TOTAL DE VENTAS
+****************************************************************************************/
+
+CREATE TRIGGER trg_DV_AIU_VentasTotal
+ON DetalleVenta
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT id_venta INTO #Afectadas FROM inserted
+    UNION SELECT id_venta FROM deleted;
+
+    UPDATE v SET v.total = ISNULL(x.suma,0)
+    FROM Venta v
+    JOIN (
+        SELECT id_venta, SUM(subtotal) AS suma
+        FROM DetalleVenta
+        WHERE id_venta IN (SELECT id_venta FROM #Afectadas)
+        GROUP BY id_venta
+    ) x ON x.id_venta = v.id_venta;
+
+    UPDATE v SET v.total = 0
+    FROM Venta v
+    WHERE v.id_venta IN (SELECT id_venta FROM #Afectadas)
+      AND NOT EXISTS (SELECT 1 FROM DetalleVenta dv WHERE dv.id_venta = v.id_venta);
+
+    DROP TABLE #Afectadas;
+END;
+GO
+
+/****************************************************************************************
+    TRIGGER: RECALCULAR TOTAL DE REPARACIONES
+****************************************************************************************/
+
+CREATE TRIGGER trg_RR_AIU_ReparacionesTotal
+ON ReparacionRepuesto
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT id_reparacion INTO #AfectadasRep FROM inserted
+    UNION SELECT id_reparacion FROM deleted;
+
+    UPDATE r SET r.total = ISNULL(x.suma,0)
+    FROM Reparacion r
+    JOIN (
+        SELECT id_reparacion, SUM(subtotal) AS suma
+        FROM ReparacionRepuesto
+        WHERE id_reparacion IN (SELECT id_reparacion FROM #AfectadasRep)
+        GROUP BY id_reparacion
+    ) x ON x.id_reparacion = r.id_reparacion;
+
+    UPDATE r SET r.total = 0
+    FROM Reparacion r
+    WHERE r.id_reparacion IN (SELECT id_reparacion FROM #AfectadasRep)
+      AND NOT EXISTS (SELECT 1 FROM ReparacionRepuesto rr WHERE rr.id_reparacion = r.id_reparacion);
+
+    DROP TABLE #AfectadasRep;
+END;
+GO
+
+/****************************************************************************************
+    TRIGGER: VALIDAR ESTADO DEL VEHÍCULO ANTES DE VENTA
+****************************************************************************************/
+
+CREATE TRIGGER trg_DV_ValidarVehiculoAntesVenta
+ON DetalleVenta
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- validar estados
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        JOIN Vehiculo v ON v.id_vehiculo = i.id_vehiculo
+        WHERE v.estado IN ('vendido','baja')
+    )
+    BEGIN
+        RAISERROR('No se puede vender un vehículo vendido o dado de baja.',16,1);
+        RETURN;
+    END
+
+    -- insertar normalmente
+    INSERT INTO DetalleVenta(id_venta,id_vehiculo,cantidad,precio_unit)
+    SELECT id_venta,id_vehiculo,cantidad,precio_unit FROM inserted;
+
+    -- cambiar a vendido
+    UPDATE Vehiculo
+    SET estado = 'vendido'
+    WHERE id_vehiculo IN (SELECT id_vehiculo FROM inserted);
+END;
+GO
+
+/****************************************************************************************
+    TRIGGER: VOLVER VEHÍCULO A DISPONIBLE AL ELIMINAR DETALLEVENTA
+****************************************************************************************/
+
+CREATE TRIGGER trg_DV_RevertirVenta
+ON DetalleVenta
+AFTER DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE Vehiculo
+    SET estado = 'disponible'
+    WHERE id_vehiculo IN (SELECT id_vehiculo FROM deleted)
+      AND estado = 'vendido';
+END;
+GO
+
+/****************************************************************************************
+    FUNCIONES
+****************************************************************************************/
+
+CREATE OR ALTER FUNCTION fn_CalcularEdad(@fecha DATE)
+RETURNS INT
+AS
+BEGIN
+    RETURN DATEDIFF(YEAR,@fecha,GETDATE()) -
+    CASE WHEN DATEFROMPARTS(YEAR(GETDATE()),MONTH(@fecha),DAY(@fecha)) > GETDATE() THEN 1 ELSE 0 END;
+END;
+GO
+
+CREATE OR ALTER FUNCTION fn_CantidadVehiculosPorMarca(@id_marca INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @c INT;
+    SELECT @c = COUNT(*) FROM Vehiculo WHERE id_marca = @id_marca;
+    RETURN ISNULL(@c,0);
+END;
+GO
+
+/****************************************************************************************
+    VISTAS
+****************************************************************************************/
+
+CREATE OR ALTER VIEW vw_VentasConTotalCalc AS
+SELECT v.*,
+       (SELECT SUM(subtotal) FROM DetalleVenta dv WHERE dv.id_venta = v.id_venta) AS total_calc
+FROM Venta v;
+GO
+
+CREATE OR ALTER VIEW vw_ReparacionesConTotalCalc AS
+SELECT r.*,
+  (SELECT SUM(subtotal) FROM ReparacionRepuesto rr WHERE rr.id_reparacion = r.id_reparacion) AS total_calc
+FROM Reparacion r;
+GO
+
+/****************************************************************************************
+    PROCEDIMIENTOS BÁSICOS
+****************************************************************************************/
+
+CREATE OR ALTER PROCEDURE sp_InsertarCliente
+ @dni VARCHAR(15), @nombre VARCHAR(50), @apellido VARCHAR(50),
+ @telefono VARCHAR(30)=NULL,@email VARCHAR(100)=NULL,@direccion VARCHAR(150)=NULL
+AS
+BEGIN
+    INSERT INTO Cliente(dni,nombre,apellido,telefono,email,direccion)
+    VALUES(@dni,@nombre,@apellido,@telefono,@email,@direccion);
+    SELECT SCOPE_IDENTITY() AS id_insertado;
+END;
+GO
+
+/****************************************************************************************
+    FIN DE SCRIPT PRINCIPAL
+****************************************************************************************/
