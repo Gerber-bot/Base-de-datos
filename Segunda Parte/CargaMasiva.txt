@@ -1,0 +1,167 @@
+USE Automotors;
+GO
+
+INSERT INTO Rol (nombre)
+VALUES ('Administrador'), ('Vendedor'), ('Mecanico');
+GO
+
+INSERT INTO Usuario (nombre, apellido, dni, fecha_nacimiento, password_hash, email, id_rol)
+VALUES
+('Admin', 'General', '12345678', '1990-01-01', 0x00, 'admin@mail.com', 1),
+('Juan', 'Ventas',  '23456789', '1992-05-05', 0x00, 'ventas@mail.com', 2),
+('Pedro','Mecanico','34567890', '1989-09-09', 0x00, 'mecanico@mail.com', 3);
+GO
+
+DECLARE @i INT = 1;
+WHILE @i <= 200
+BEGIN
+    INSERT INTO Cliente (dni, nombre, apellido, telefono, email, direccion)
+    VALUES (
+        RIGHT('00000000' + CAST(40000000 + @i AS VARCHAR(8)), 8),
+        'Nombre' + CAST(@i AS VARCHAR(5)),
+        'Apellido' + CAST(@i AS VARCHAR(5)),
+        '1130' + RIGHT('0000000' + CAST(@i AS VARCHAR(7)), 7),
+        'cliente' + CAST(@i AS VARCHAR(5)) + '@mail.com',
+        'Calle Falsa ' + CAST(@i AS VARCHAR(5))
+    );
+    SET @i = @i + 1;
+END;
+GO
+
+INSERT INTO Marca (nombre)
+VALUES ('Ford'), ('Chevrolet'), ('Toyota'), ('Honda'), ('Nissan'),
+       ('BMW'), ('Audi'), ('Peugeot'), ('Renault'), ('Volkswagen');
+GO
+
+DECLARE @v INT = 1;
+WHILE @v <= 100
+BEGIN
+    INSERT INTO Vehiculo (id_marca, modelo, anio, vin, patente, precio, estado, kilometraje)
+    VALUES (
+        ((@v - 1) % 10) + 1,                 -- Marca 1..10
+        'Modelo ' + CAST(@v AS VARCHAR(5)),
+        2010 + (@v % 12),                   -- Años variados
+        'V' + RIGHT('0000000000000000' + CAST(@v AS VARCHAR(16)), 16),  -- VIN = 17 chars
+
+        CASE WHEN @v <= 50 THEN
+            -- Patente clásica AAA111
+            CHAR(65 + (@v % 26)) + CHAR(65 + (@v % 26)) + CHAR(65 + (@v % 26))
+            + RIGHT('000' + CAST(@v AS VARCHAR(3)), 3)
+        ELSE
+            -- Patente Mercosur AA000AA
+            CHAR(65 + (@v % 26)) + CHAR(65 + ((@v + 3) % 26))
+            + RIGHT('000' + CAST(@v AS VARCHAR(3)), 3)
+            + CHAR(65 + ((@v + 5) % 26)) + CHAR(65 + ((@v + 7) % 26))
+        END,
+
+        1500000 + (@v * 1500),              -- Precio creciente
+        'disponible',
+        CASE WHEN @v <= 50 THEN 0 ELSE 8000 + @v * 20 END  -- km válidos
+    );
+    SET @v = @v + 1;
+END;
+GO
+
+DECLARE @p INT = 1;
+WHILE @p <= 100
+BEGIN
+    INSERT INTO Proveedor (nombre, telefono, email)
+    VALUES (
+        'Proveedor ' + CAST(@p AS VARCHAR(5)),
+        '1145' + RIGHT('0000000' + CAST(@p AS VARCHAR(7)), 7),
+        'prov' + CAST(@p AS VARCHAR(5)) + '@mail.com'
+    );
+    SET @p = @p + 1;
+END;
+GO
+
+DECLARE @r INT = 1;
+WHILE @r <= 200
+BEGIN
+    INSERT INTO Repuesto (nombre, precio, id_proveedor)
+    VALUES (
+        'Repuesto ' + CAST(@r AS VARCHAR(5)),
+        500 + (@r * 10),
+        ((@r - 1) % 100) + 1
+    );
+    SET @r = @r + 1;
+END;
+GO
+
+DECLARE @t INT = 1;
+WHILE @t <= 400
+BEGIN
+    INSERT INTO Turno (id_cliente, id_vehiculo, fecha_hora, estado, notas)
+    VALUES (
+        ((@t - 1) % 200) + 1,          -- Clientes 1..200
+        ((@t - 1) % 100) + 1,          -- Vehículos 1..100
+        DATEADD(DAY, @t % 20, GETDATE()),
+        'pendiente',
+        'Turno generado automaticamente'
+    );
+    SET @t = @t + 1;
+END;
+GO
+
+INSERT INTO MedioPago (nombre)
+VALUES ('Efectivo'), ('Tarjeta Débito'), ('Tarjeta Crédito'),
+       ('Transferencia'), ('MercadoPago');
+GO
+
+DECLARE @ve INT = 1;
+WHILE @ve <= 300
+BEGIN
+    INSERT INTO Venta (id_cliente, id_usuario, fecha, id_medio_pago)
+    VALUES (
+        ((@ve - 1) % 200) + 1,
+        2,                                -- Vendedor
+        DATEADD(DAY, -(@ve % 20), GETDATE()),
+        1                                 -- Efectivo
+    );
+    SET @ve = @ve + 1;
+END;
+GO
+
+DECLARE @dv INT = 1;
+WHILE @dv <= 300
+BEGIN
+    INSERT INTO DetalleVenta (id_venta, id_vehiculo, cantidad, precio_unit)
+    VALUES (
+        @dv,
+        ((@dv - 1) % 100) + 1,
+        1,
+        1600000 + (@dv * 20)
+    );
+    SET @dv = @dv + 1;
+END;
+GO
+
+DECLARE @rr INT = 1;
+WHILE @rr <= 200
+BEGIN
+    INSERT INTO Reparacion (id_vehiculo, id_cliente, id_usuario, fecha_inicio, estado)
+    VALUES (
+        ((@rr - 1) % 100) + 1,
+        ((@rr - 1) % 200) + 1,
+        3,
+        DATEADD(DAY, -(@rr % 10), GETDATE()),
+        'en_proceso'
+    );
+    SET @rr = @rr + 1;
+END;
+GO
+
+DECLARE @dr INT = 1;
+WHILE @dr <= 400
+BEGIN
+    INSERT INTO ReparacionRepuesto (id_reparacion, id_repuesto, cantidad, precio_unit)
+    VALUES (
+        ((@dr - 1) % 200) + 1,
+        ((@dr - 1) % 200) + 1,
+        1,
+        800
+    );
+    SET @dr = @dr + 1;
+END;
+GO
+
