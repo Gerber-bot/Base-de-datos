@@ -60,11 +60,7 @@ CREATE TABLE dbo.Usuario
 );
 -- (Seguridad app: opcionalmente agregar password_salt/algoritmo)
 
-/* =========================
-   MAESTROS (Ventas / Inventario)
-   ========================= */
 
--- Clientes
 CREATE TABLE dbo.Cliente
 (
     id_cliente INT IDENTITY(1,1) NOT NULL,
