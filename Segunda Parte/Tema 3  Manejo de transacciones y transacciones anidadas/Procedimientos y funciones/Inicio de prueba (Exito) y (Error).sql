@@ -1,20 +1,20 @@
 USE Automotors;
 
-PRINT '--- INICIO DE LA TRANSACCIÓN EXITOSA ---';
+PRINT '--- INICIO DE LA TRANSACCIÃ“N EXITOSA ---';
 
 -- 1. Se define los IDs que vamos a usar (IDs fijos de los datos cargados)
 DECLARE @ClienteID INT = 1;
 DECLARE @UsuarioID INT = 2; -- Asumimos que el ID 2 es un Vendedor
-DECLARE @VehiculoID INT = 1; -- Asumimos que el Vehículo 1 tiene stock
+DECLARE @VehiculoID INT = 1; -- Asumimos que el VehÃ­culo 1 tiene stock
 DECLARE @PrecioDelVehiculo DECIMAL(12, 2) = 15000000.00; -- Ponemos un precio fijo
-DECLARE @VentaID_Generada INT; -- Aquí guardaremos el ID de la nueva venta
+DECLARE @VentaID_Generada INT; -- AquÃ­ guardaremos el ID de la nueva venta
 
 -- 2. Iniciamos el bloque TRY-CATCH (Intentar)
 BEGIN TRY
 
-    -- 3. Iniciamos la transacción (la "zona segura")
+    -- 3. Iniciamos la transacciÃ³n (la "zona segura")
     BEGIN TRANSACTION;
-    PRINT '... Transacción iniciada ...';
+    PRINT '... TransacciÃ³n iniciada ...';
 
     -- PASO 1: INSERTAR en la primera tabla (Venta)
     INSERT INTO dbo.Venta (id_cliente, id_usuario, fecha, medio_pago, total)
@@ -25,7 +25,7 @@ BEGIN TRY
     PRINT 'Paso 1: Venta creada con ID: ' + CAST(@VentaID_Generada AS VARCHAR);
 
     -- PASO 2: INSERTAR en la segunda tabla (DetalleVenta)
-    -- (Esto disparará el trigger que calcula el total)
+    -- (Esto dispararÃ¡ el trigger que calcula el total)
     INSERT INTO dbo.DetalleVenta (id_venta, id_vehiculo, cantidad, precio_unit)
     VALUES (@VentaID_Generada, @VehiculoID, 1, @PrecioDelVehiculo);
     
@@ -36,24 +36,24 @@ BEGIN TRY
     SET stock = stock - 1 -- Restamos 1 al stock
     WHERE id_vehiculo = @VehiculoID;
     
-    PRINT 'Paso 3: Stock del Vehículo actualizado.';
+    PRINT 'Paso 3: Stock del VehÃ­culo actualizado.';
 
-    -- 4. Si todo salió bien, confirmamos los cambios
+    -- 4. Si todo saliÃ³ bien, confirmamos los cambios
     COMMIT TRANSACTION;
-    PRINT '... Transacción confirmada (COMMIT) ...';
+    PRINT '... TransacciÃ³n confirmada (COMMIT) ...';
 
 END TRY
 -- 5. Bloque CATCH (Si algo falla...)
 BEGIN CATCH
-    -- 6. Si algo falló, deshacemos TODOS los cambios
-    PRINT '!!! Ocurrió un error. Iniciando ROLLBACK. !!!';
+    -- 6. Si algo fallÃ³, deshacemos TODOS los cambios
+    PRINT '!!! OcurriÃ³ un error. Iniciando ROLLBACK. !!!';
     
-    IF @@TRANCOUNT > 0 -- (Solo si la transacción sigue abierta)
+    IF @@TRANCOUNT > 0 -- (Solo si la transacciÃ³n sigue abierta)
         ROLLBACK TRANSACTION;
         
-    PRINT '... Transacción revertida (ROLLBACK) ...';
+    PRINT '... TransacciÃ³n revertida (ROLLBACK) ...';
     
-    -- Mostramos qué error fue
+    -- Mostramos quÃ© error fue
     PRINT 'Error: ' + ERROR_MESSAGE();
 END CATCH;
 
@@ -79,11 +79,11 @@ WHERE id_vehiculo = @VehiculoID;
 -- 2. Iniciamos el bloque TRY
 BEGIN TRY
 
-    -- 3. Iniciamos la transacción
+    -- 3. Iniciamos la transacciÃ³n
     BEGIN TRANSACTION VentaVehiculo;
-    PRINT '... Transacción iniciada ...';
+    PRINT '... TransacciÃ³n iniciada ...';
 
-    -- PASO 1: INSERTAR en Venta (Esto funcionará)
+    -- PASO 1: INSERTAR en Venta (Esto funcionarÃ¡)
     INSERT INTO dbo.Venta (id_cliente, id_usuario, fecha, medio_pago, total)
     VALUES (@ClienteID, @UsuarioID, GETDATE(), 'efectivo', 0);
     
@@ -99,7 +99,7 @@ BEGIN TRY
     -- (La severidad 16 es un error de usuario que activa el CATCH)
     -- ========================================================
 
-    -- ESTAS LÍNEAS NUNCA SE EJECUTARÁN
+    -- ESTAS LÃNEAS NUNCA SE EJECUTARÃN
     -- PASO 2: INSERTAR en DetalleVenta
     INSERT INTO dbo.DetalleVenta (id_venta, id_vehiculo, cantidad, precio_unit)
     VALUES (@VentaID_Generada, @VehiculoID, 1, @PrecioDelVehiculo);
@@ -109,22 +109,22 @@ BEGIN TRY
     UPDATE dbo.Vehiculo
     SET stock = stock - 1 
     WHERE id_vehiculo = @VehiculoID;
-    PRINT 'Paso 3: Stock del Vehículo actualizado.';
+    PRINT 'Paso 3: Stock del VehÃ­culo actualizado.';
 
-    -- 4. El COMMIT nunca se alcanzará
+    -- 4. El COMMIT nunca se alcanzarÃ¡
     COMMIT TRANSACTION VentaVehiculo;
-    PRINT '... Transacción confirmada (COMMIT) ...'; -- (No veremos este mensaje)
+    PRINT '... TransacciÃ³n confirmada (COMMIT) ...'; -- (No veremos este mensaje)
 
 END TRY
--- 5. Bloque CATCH (El error nos enviará aquí)
+-- 5. Bloque CATCH (El error nos enviarÃ¡ aquÃ­)
 BEGIN CATCH
-    PRINT '!!! Ocurrió un error. Iniciando ROLLBACK. !!!';
+    PRINT '!!! OcurriÃ³ un error. Iniciando ROLLBACK. !!!';
     
     -- 6. Se revierten TODOS los cambios (incluido el INSERT del Paso 1)
     IF @@TRANCOUNT > 0 
         ROLLBACK TRANSACTION VentaVehiculo;
         
-    PRINT '... Transacción revertida (ROLLBACK) ...';
+    PRINT '... TransacciÃ³n revertida (ROLLBACK) ...';
     
     -- Mostramos el error que simulamos
     PRINT 'Error: ' + ERROR_MESSAGE();
