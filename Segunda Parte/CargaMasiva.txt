@@ -34,29 +34,25 @@ VALUES ('Ford'), ('Chevrolet'), ('Toyota'), ('Honda'), ('Nissan'),
 GO
 
 DECLARE @v INT = 1;
-WHILE @v <= 100
+WHILE @v <= 400
 BEGIN
     INSERT INTO Vehiculo (id_marca, modelo, anio, vin, patente, precio, estado, kilometraje)
     VALUES (
-        ((@v - 1) % 10) + 1,                 -- Marca 1..10
+        ((@v - 1) % 10) + 1,
         'Modelo ' + CAST(@v AS VARCHAR(5)),
-        2010 + (@v % 12),                   -- Años variados
-        'V' + RIGHT('0000000000000000' + CAST(@v AS VARCHAR(16)), 16),  -- VIN = 17 chars
-
+        2010 + (@v % 12),
+        'V' + RIGHT('0000000000000000' + CAST(@v AS VARCHAR(16)), 16),
         CASE WHEN @v <= 50 THEN
-            -- Patente clásica AAA111
-            CHAR(65 + (@v % 26)) + CHAR(65 + (@v % 26)) + CHAR(65 + (@v % 26))
-            + RIGHT('000' + CAST(@v AS VARCHAR(3)), 3)
+            CHAR(65 + (@v % 26)) + CHAR(65 + (@v % 26)) + CHAR(65 + (@v % 26)) +
+            RIGHT('000' + CAST(@v AS VARCHAR(3)), 3)
         ELSE
-            -- Patente Mercosur AA000AA
-            CHAR(65 + (@v % 26)) + CHAR(65 + ((@v + 3) % 26))
-            + RIGHT('000' + CAST(@v AS VARCHAR(3)), 3)
-            + CHAR(65 + ((@v + 5) % 26)) + CHAR(65 + ((@v + 7) % 26))
+            CHAR(65 + (@v % 26)) + CHAR(65 + ((@v + 3) % 26)) +
+            RIGHT('000' + CAST(@v AS VARCHAR(3)), 3) +
+            CHAR(65 + ((@v + 5) % 26)) + CHAR(65 + ((@v + 7) % 26))
         END,
-
-        1500000 + (@v * 1500),              -- Precio creciente
+        1500000 + (@v * 1500),
         'disponible',
-        CASE WHEN @v <= 50 THEN 0 ELSE 8000 + @v * 20 END  -- km válidos
+        CASE WHEN @v <= 50 THEN 0 ELSE 8000 + @v * 20 END
     );
     SET @v = @v + 1;
 END;
@@ -93,8 +89,8 @@ WHILE @t <= 400
 BEGIN
     INSERT INTO Turno (id_cliente, id_vehiculo, fecha_hora, estado, notas)
     VALUES (
-        ((@t - 1) % 200) + 1,          -- Clientes 1..200
-        ((@t - 1) % 100) + 1,          -- Vehículos 1..100
+        ((@t - 1) % 200) + 1,
+        ((@t - 1) % 100) + 1,
         DATEADD(DAY, @t % 20, GETDATE()),
         'pendiente',
         'Turno generado automaticamente'
@@ -109,30 +105,32 @@ VALUES ('Efectivo'), ('Tarjeta Débito'), ('Tarjeta Crédito'),
 GO
 
 DECLARE @ve INT = 1;
-WHILE @ve <= 300
+WHILE @ve <= 100
 BEGIN
     INSERT INTO Venta (id_cliente, id_usuario, fecha, id_medio_pago)
     VALUES (
         ((@ve - 1) % 200) + 1,
-        2,                                -- Vendedor
+        2,
         DATEADD(DAY, -(@ve % 20), GETDATE()),
-        1                                 -- Efectivo
+        1
     );
     SET @ve = @ve + 1;
 END;
 GO
 
 DECLARE @dv INT = 1;
-WHILE @dv <= 300
+DECLARE @vehiculo INT = 101;
+WHILE @dv <= 100
 BEGIN
     INSERT INTO DetalleVenta (id_venta, id_vehiculo, cantidad, precio_unit)
     VALUES (
         @dv,
-        ((@dv - 1) % 100) + 1,
+        @vehiculo,
         1,
         1600000 + (@dv * 20)
     );
     SET @dv = @dv + 1;
+    SET @vehiculo = @vehiculo + 1;
 END;
 GO
 
@@ -164,4 +162,3 @@ BEGIN
     SET @dr = @dr + 1;
 END;
 GO
-
