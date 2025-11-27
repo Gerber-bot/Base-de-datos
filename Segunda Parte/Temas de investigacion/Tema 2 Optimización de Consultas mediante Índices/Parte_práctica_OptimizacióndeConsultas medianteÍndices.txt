@@ -1,0 +1,111 @@
+
+  -- Tema 2:
+  -- Optimización de Consultas mediante Índices
+  -- Base de datos: Automotors
+  
+
+-- 1) Creación de la tabla de pruebas
+
+USE Automotors;
+GO
+
+IF OBJECT_ID('dbo.VentasBench','U') IS NOT NULL 
+    DROP TABLE dbo.VentasBench;
+GO
+
+CREATE TABLE dbo.VentasBench
+(
+    id BIGINT IDENTITY(1,1) NOT NULL,
+    fecha DATE NOT NULL,
+    monto DECIMAL(12,2) NOT NULL,
+    cliente_id INT NOT NULL,
+    detalles CHAR(10) NULL,
+    CONSTRAINT PK_VentasBench PRIMARY KEY NONCLUSTERED (id)
+);
+GO
+
+
+-- 2) Carga masiva de datos ( 1 millón de registros)
+
+;WITH E1(N) AS (
+       SELECT 1 FROM (VALUES(1),(1),(1),(1),(1),(1),(1),(1),(1),(1)) a(n)
+),
+E2(N) AS (
+       SELECT 1 FROM E1 a CROSS JOIN E1 b
+),
+E4(N) AS (
+       SELECT 1 FROM E2 a CROSS JOIN E2 b
+),
+E5(N) AS (
+       SELECT 1 FROM E4 a CROSS JOIN E2 b
+),
+Tally(N) AS (
+       SELECT TOP (1000000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
+       FROM E5
+)
+INSERT INTO dbo.VentasBench (fecha, monto, cliente_id, detalles)
+SELECT DATEADD(DAY, N % 3650, '2016-01-01'),
+       (N % 10000) / 1.0,
+       (N % 100000),
+       RIGHT(CONCAT('X', N), 10)
+FROM Tally;
+GO
+-- Se generan fechas entre 2016 y 2025 aproximadamente.
+
+
+-- 3) Prueba A – Consulta SIN índice
+
+SET STATISTICS TIME ON;
+SET STATISTICS IO ON;
+
+SELECT 
+    SUM(monto)  AS total_2020, 
+    COUNT(*)    AS filas_2020
+FROM dbo.VentasBench
+WHERE fecha BETWEEN '2020-01-01' AND '2020-12-31';
+GO
+-- Resultado esperado del plan: Table Scan (recorre toda la tabla).
+
+
+-- 4) Prueba B – Índice CLUSTERED en fecha
+
+CREATE CLUSTERED INDEX CX_VentasBench_fecha 
+ON dbo.VentasBench(fecha);
+GO
+
+SET STATISTICS TIME ON;
+SET STATISTICS IO ON;
+
+SELECT 
+    SUM(monto)  AS total_2020, 
+    COUNT(*)    AS filas_2020
+FROM dbo.VentasBench
+WHERE fecha BETWEEN '2020-01-01' AND '2020-12-31';
+GO
+-- Resultado esperado del plan: Index Seek (solo lee los registros necesarios).
+
+
+-- 5) Prueba C – Índice NONCLUSTERED + INCLUDE
+
+DROP INDEX CX_VentasBench_fecha 
+ON dbo.VentasBench;
+GO
+
+CREATE NONCLUSTERED INDEX IX_VentasBench_fecha_cover
+ON dbo.VentasBench(fecha)
+INCLUDE (monto, cliente_id, detalles);
+GO
+
+SET STATISTICS TIME ON;
+SET STATISTICS IO ON;
+
+SELECT 
+    fecha, 
+    monto, 
+    cliente_id, 
+    detalles
+FROM dbo.VentasBench
+WHERE fecha >= '2020-01-01' 
+  AND fecha <  '2021-01-01';
+GO
+-- Resultado esperado: Index Seek sin Key Lookup (el índice cubre toda la consulta).
