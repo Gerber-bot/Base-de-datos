@@ -1,0 +1,34 @@
+USE Automotors;
+GO
+
+CREATE UNIQUE CLUSTERED INDEX IXC_vCliente_Basica_dni
+	ON dbo.vCliente_Basica(dni);
+GO
+
+CREATE NONCLUSTERED INDEX IX_vCliente_Basica_apellido
+	ON dbo.vCliente_Basica(apellido, nombre);
+GO
+
+--Evaluación de rendimiento en tiempo real
+SET STATISTICS IO ON;
+SER STATISTICS TIME ON;
+GO
+
+SELECT id_cliente, nombre, apellido, email
+FROM dbo.vCliente_Basica
+WHERE dni = '44573877';
+GO
+
+SELECT id_cliente, nombre, apellido, email
+FROM dbo.Cliente
+WHERE dni = '44573877';
+GO
+
+SELECT id_cliente, dni, nombre, apellido
+FROM dbo.vCliente_Basica
+WHERE apellido = 'Asselborn';
+GO
+
+SET STATISTICS IO OFF;
+SET STATISTICS TIME OFF;
+GO

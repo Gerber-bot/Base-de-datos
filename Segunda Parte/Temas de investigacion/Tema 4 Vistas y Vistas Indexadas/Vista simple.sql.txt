@@ -1,0 +1,40 @@
+USE Automotors;
+GO
+
+CREATE VIEW dbo.vCliente_Basica
+WITH SCHEMABINDING
+AS
+SELECT
+	c.id_cliente,
+	c.dni,
+	c.nombre,
+	c.apellido,
+	c.email
+FROM dbo.Cliente AS c;
+GO
+
+--Inserción a través de la vista
+INSERT INTO dbo.vCliente_Basica (dni, nombre, apellido, email)
+VALUES
+('44573877', 'Santiago', 'Asselborn', 'santiasselborn1@gmail.com'),
+('10000000', 'Bruno', 'Lopez', 'brunolopez@gmail.com'),
+('11000000', 'Carla', 'Gomez', NULL);
+
+SELECT id_cliente, dni, nombre, apellido, email
+FROM dbo.Cliente
+WHERE dni IN ('44573877', '10000000', '11000000');
+
+--Actualización de registros
+UPDATE v
+SET email = 'carlagomez@gmail.com'
+FROM dbo.vCliente_Basica AS v
+WHERE v.dni = '11000000';
+
+SELECT id_cliente, dni, nombre, apellido, email
+FROM dbo.Cliente
+WHERE dni = '11000000';
+
+--Eliminación de registros
+DELETE v
+FROM dbo.vCliente_Basica AS v
+WHERE v.dni IN ('44573877', '10000000', '11000000');
